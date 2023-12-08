@@ -7,7 +7,7 @@ put this new machine into. You will also need to [create an API key]
 with appropriate read/write permissions to allow the image to boot.
 
 [create a Packet account]:https://app.packet.net/#/registration/
-[create an API key]:https://help.packet.net/quick-start/api-integrations
+create an API key]:https://help.packet.net/quick-start/api-integrations
 
 Linuxkit is known to boot on the [Type 0] 
 and [Type 1] servers at Packet.
@@ -49,9 +49,9 @@ retry the boot typically fixes this.
 
 LinuxKit on Packet boots the `kernel+initrd` output from moby via
 [iPXE](https://help.packet.net/technical/infrastructure/custom-ipxe)
-which also requires a iPXE script. iPXE booting requires a HTTP server
+which also requires an iPXE script. iPXE booting requires an HTTP server
 on which you can store your images. The `-base-url` option specifies
-the URL to a HTTP server from which `<name>-kernel`,
+the URL to an HTTP server from which `<name>-kernel`,
 `<name>-initrd.img`, and `<name>-packet.ipxe` can be downloaded during
 boot.
 
@@ -59,20 +59,37 @@ If you have your own HTTP server, you can use `linuxkit push packet`
 to create the files (including the iPXE script) you need to make
 available.
 
-If you don't have a public HTTP server at hand, you can use the
-`-serve` option. This will create a local HTTP server which can either
-be run on another Packet machine or be made accessible with tools
-like [ngrok](https://ngrok.com/).
+If you don't have a public HTTP server at hand, you can use the `-serve`
+option. This will create a local HTTP server which can either be run on
+another Packet machine or be made accessible with
+[Tunnelmole](https://github.com/robbie-cahill/tunnelmole-client) an open source tunneling tool, or [ngrok](https://ngrok.com/), a popular closed source tunnelling tool.
+
+To use Tunnelmole as your tunnelling tool to make a local server accessible:
+
+First, [install Tunnelmole](https://github.com/robbie-cahill/tunnelmole-client). For Linux, Mac, and Windows Subsystem for Linux (WSL), use the following command:
+```sh
+curl -O https://install.tunnelmole.com/l33gg/install && sudo bash install
+```
+
+Then, run Tunnelmole to expose port 8080:
+```sh
+tmole 8080
+```
+You will receive output similar to:
+```
+http://bvdo5f-ip-49-183-170-144.tunnelmole.net is forwarding to localhost:8080
+https://bvdo5f-ip-49-183-170-144.tunnelmole.net is forwarding to localhost:8080
+```
 
 For example, to boot the [example](../examples/packet.net)
-with a local HTTP server:
+with a local HTTP server accessible via Tunnelmole:
 
 ```sh
 linuxkit build packet.yml
 # run the web server
-# run 'ngrok http 8080' in another window
+# run 'tmole 8080' or `ngrok http 8080` in another window
 PACKET_API_KEY=<API key> PACKET_PROJECT_ID=<Project ID> \
-linuxkit run packet -serve :8080 -base-url <ngrok url> packet
+linuxkit run packet -serve :8080 -base-url <tunnelmole url> packet
 ```
 
 To boot a `arm64` image for Type 2a machine (`-machine baremetal_2a`)
@@ -89,18 +106,15 @@ The LinuxKit image can then be booted with:
 
 ```sh
 PACKET_API_KEY=<API key> PACKET_PROJECT_ID=<Project ID> \
-linuxkit run packet -machine baremetal_2a  -serve :8080 -base-url -base-url <ngrok url> packet
+linuxkit run packet -machine baremetal_2a -serve :8080 -base-url <tunnelmole url> packet
 ```
 
 Alternatively, `linuxkit push packet` will uncompress the kernel and
 initrd images on arm machines (or explicitly via the `-decompress`
-flag. There is also a `linuxkit serve` command which will start a
+flag). There is also a `linuxkit serve` command which will start a
 local HTTP server serving the specified directory.
 
-**Note**: It may take several minutes to deploy a new server. If you
-are attached to the console, you should see the BIOS and the boot
-messages.
-
+**Note**: It may take several minutes to deploy a new server. If you are attached to the console, you should see the BIOS and the boot messages.
 
 ## Console
 
