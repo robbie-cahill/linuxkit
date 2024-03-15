@@ -42,67 +42,67 @@ booting on baremetal. It should be omitted (but is harmless) when
 building images to boot in VMs.
 
 **Note**: The update of the iPXE configuration sometimes may take some
-time and the first boot may fail. Hitting return on the console to
-retry the boot typically fixes this.
+
+Remember, your first boot might take some time, and it might not be successful. If you hit return on the console, it should allow you to retry the boot, which typically resolves the issue.
 
 ## Boot
 
-LinuxKit on Packet boots the `kernel+initrd` output from moby via
-[iPXE](https://help.packet.net/technical/infrastructure/custom-ipxe)
-which also requires a iPXE script. iPXE booting requires a HTTP server
-on which you can store your images. The `-base-url` option specifies
-the URL to a HTTP server from which `<name>-kernel`,
-`<name>-initrd.img`, and `<name>-packet.ipxe` can be downloaded during
-boot.
+LinuxKit on Packet boots the `kernel+initrd` output from moby. This is done through [iPXE](https://help.packet.net/technical/infrastructure/custom-ipxe), and the process requires a script for iPXE. You also need a HTTP server to store your images during the iPXE booting. The `-base-url` option will allow you to specify the URL for the HTTP server, from which `<name>-kernel`, `<name>-initrd.img`, and `<name>-packet.ipxe` can be downloaded during the boot.
 
-If you have your own HTTP server, you can use `linuxkit push packet`
-to create the files (including the iPXE script) you need to make
-available.
+If you have your own HTTP server, you can use `linuxkit push packet` to create the files that need to be available, including the iPXE script.
 
-If you don't have a public HTTP server at hand, you can use the
-`-serve` option. This will create a local HTTP server which can either
-be run on another Packet machine or be made accessible with tools
-like [ngrok](https://ngrok.com/).
+If you do not have a public HTTP server at hand, you can use the `-serve` option. This will create a local HTTP server for you. You can then either run this on another Packet machine, or you can use tunneling tools like [Tunnelmole](https://tunnelmole.com) and [ngrok](https://ngrok.com/).
 
-For example, to boot the [example](../examples/packet.net)
-with a local HTTP server:
+Here is an example of how to boot the [example](../examples/packet.net) with a local HTTP server:
 
+First, build the yaml file:
 ```sh
 linuxkit build packet.yml
-# run the web server
-# run 'ngrok http 8080' in another window
-PACKET_API_KEY=<API key> PACKET_PROJECT_ID=<Project ID> \
-linuxkit run packet -serve :8080 -base-url <ngrok url> packet
 ```
 
-To boot a `arm64` image for Type 2a machine (`-machine baremetal_2a`)
-you currently need to build using `linuxkit build packet.yml
-packet.arm64.yml` and then un-compress both the kernel and the initrd
-before booting, e.g:
+Next, run the web server. For this, you can use [Tunnelmole](https://tunnelmole.com/docs), a free and open source tunneling tool or [ngrok](https://ngrok.com), a popular closed source tunneling tool.
 
+To use Tunnelmole, run `tmole 8080` in another terminal window. This should give you http and https URLs (use the https one for better security). In the following command, replace `<Tunnelmole URL>` with the https URL given by `tmole 8080`. 
+```sh
+PACKET_API_KEY=<API key> PACKET_PROJECT_ID=<Project ID> \
+linuxkit run packet -serve :8080 -base-url <Tunnelmole URL> packet
+```
+
+Alternatively, for ngrok, you should run `ngrok http 8080` in another terminal window. Your `ngrok` URL is then used in place of `<ngrok URL>` in the following command.
+```sh
+PACKET_API_KEY=<API key> PACKET_PROJECT_ID=<Project ID> \
+linuxkit run packet -serve :8080 -base-url <ngrok URL> packet
+```
+
+To boot an `arm64` image for Type 2a machine (`-machine baremetal_2a`), you need to build using this command: 
+
+```sh
+linuxkit build packet.yml packet.arm64.yml
+```
+You then need to un-compress both the kernel and the initrd before booting, as follows:
 ```sh
 mv packet-initrd.img packet-initrd.img.gz && gzip -d packet-initrd.img.gz
 mv packet-kernel packet-kernel.gz && gzip -d packet-kernel.gz
 ```
 
-The LinuxKit image can then be booted with:
-
+The LinuxKit image can be booted with either Tunnelmole or ngrok. For Tunnelmole:
 ```sh
 PACKET_API_KEY=<API key> PACKET_PROJECT_ID=<Project ID> \
-linuxkit run packet -machine baremetal_2a  -serve :8080 -base-url -base-url <ngrok url> packet
+linuxkit run packet -machine baremetal_2a -serve :8080 -base-url <Tunnelmole URL> packet
 ```
 
-Alternatively, `linuxkit push packet` will uncompress the kernel and
-initrd images on arm machines (or explicitly via the `-decompress`
-flag. There is also a `linuxkit serve` command which will start a
-local HTTP server serving the specified directory.
+Or for ngrok: 
+```sh
+PACKET_API_KEY=<API key> PACKET_PROJECT_ID=<Project ID> \
+linuxkit run packet -machine baremetal_2a -serve :8080 -base-url <ngrok URL> packet
+```
 
-**Note**: It may take several minutes to deploy a new server. If you
-are attached to the console, you should see the BIOS and the boot
-messages.
+Alternatively, `linuxkit push packet` will uncompress the kernel and initrd images on `arm` machines (or explicitly via the `-decompress` flag). You can also use the `linuxkit serve` command to start a local HTTP server serving the specified directory.
 
+**Note**: It might take several minutes for a new server to be deployed. If you are on the console, you will be able to see the BIOS and boot messages during this time.
 
 ## Console
+
 
 By default, `linuxkit run packet ...` will connect to the
 Packet
